@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Ashrama Caretaker - Medicine Reminder</title>
+
+<style>
+    body {
+        font-family: "Poppins", sans-serif;
+        background: linear-gradient(to right, #6a11cb, #2575fc);
+        margin: 0;
+    }
+
+    header {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(10px);
+        color: white;
+        padding: 22px;
+        text-align: center;
+        font-size: 32px;
+        font-weight: 600;
+        border-bottom: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .container {
+        width: 90%;
+        max-width: 900px;
+        margin: 25px auto;
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        animation: fadeIn 0.7s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    input, button, select {
+        padding: 12px;
+        width: 100%;
+        margin-top: 10px;
+        font-size: 16px;
+        border-radius: 8px;
+        border: 1px solid #ccc;
+    }
+
+    button {
+        cursor: pointer;
+        background: #2f5fa3;
+        border: none;
+        color: white;
+        transition: 0.3s;
+    }
+
+    button:hover { background: #1f4a80; }
+
+    .wa-all-btn {
+        background: #25D366;
+        margin-top: 15px;
+        font-size: 18px;
+    }
+
+    .wa-all-btn:hover {
+        background: #1ebe5d;
+    }
+
+    .person {
+        background: #eef3f9;
+        padding: 15px;
+        margin: 12px 0;
+        border-left: 7px solid #2f5fa3;
+        border-radius: 12px;
+        transition: 0.3s;
+    }
+
+    .person:hover {
+        transform: scale(1.01);
+    }
+</style>
+</head>
+
+<body>
+
+<header id="headerTitle">Ashrama Caretaker – Medicine Reminder</header>
+
+<div class="container">
+
+    <h2 id="addTitle">Add Elderly Person</h2>
+
+    <label id="labelName">Name:</label>
+    <input type="text" id="name">
+
+    <label id="labelMedicine">Medicine:</label>
+    <input type="text" id="medicine">
+
+    <label id="labelTime">Medicine Time:</label>
+    <input type="time" id="time">
+
+    <button onclick="addPerson()" id="addButton">Add</button>
+
+    <hr>
+
+    <h2 id="langTitle">Select Interface Language</h2>
+    <select id="lang" onchange="changeLanguage()">
+        <option value="english">English</option>
+        <option value="kannada">Kannada</option>
+        <option value="hindi">Hindi</option>
+    </select>
+
+    <button class="wa-all-btn" onclick="sendAllWhatsApp()" id="waAllBtn">
+        Send ALL Data to WhatsApp
+    </button>
+
+    <hr>
+
+    <h2 id="listTitle">Elderly List</h2>
+    <div id="list"></div>
+
+</div>
+
+<script>
+    const caretakerNumber = "91XXXXXXXXXX";  // Add number here
+
+    let people = JSON.parse(localStorage.getItem("people")) || [];
+
+    // 🌍 LANGUAGE PACKS
+    const translations = {
+        english: {
+            header: "Ashrama Caretaker – Medicine Reminder",
+            addTitle: "Add Elderly Person",
+            labelName: "Name:",
+            labelMedicine: "Medicine:",
+            labelTime: "Medicine Time:",
+            addButton: "Add",
+            langTitle: "Select Interface Language",
+            waAllBtn: "Send ALL Data to WhatsApp",
+            listTitle: "Elderly List",
+            msg: (p)=> `Medicine Reminder:\nName: ${p.name}\nMedicine: ${p.medicine}\nTime: ${p.time}`
+        },
+
+        kannada: {
+            header: "ಆಶ್ರಮ ಪಾಲಕರು – ಔಷಧಿ ನೆನಪು",
+            addTitle: "ಹಿರಿಯರನ್ನು ಸೇರಿಸಿ",
+            labelName: "ಹೆಸರು:",
+            labelMedicine: "ಔಷಧಿ:",
+            labelTime: "ಔಷಧಿ ಸಮಯ:",
+            addButton: "ಸೇರಿಸಿ",
+            langTitle: "ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
+            waAllBtn: "ಎಲ್ಲಾ ಮಾಹಿತಿಯನ್ನು WhatsApp ಗೆ ಕಳುಹಿಸಿ",
+            listTitle: "ಹಿರಿಯರ ಪಟ್ಟಿ",
+            msg: (p)=> `ಔಷಧಿ ನೆನಪು:\nಹೆಸರು: ${p.name}\nಔಷಧಿ: ${p.medicine}\nಸಮಯ: ${p.time}`
+        },
+
+        hindi: {
+            header: "आश्रम केयरटेकर – दवाई रिमाइंडर",
+            addTitle: "बुजुर्ग व्यक्ति जोड़ें",
+            labelName: "नाम:",
+            labelMedicine: "दवाई:",
+            labelTime: "दवाई का समय:",
+            addButton: "जोड़ें",
+            langTitle: "इंटरफ़ेस भाषा चुनें",
+            waAllBtn: "सभी डेटा WhatsApp पर भेजें",
+            listTitle: "बुजुर्गों की सूची",
+            msg: (p)=> `दवाई याद दिलाना:\nनाम: ${p.name}\nदवाई: ${p.medicine}\nसमय: ${p.time}`
+        }
+    };
+
+    // 🌍 APPLY LANGUAGE TO UI
+    function changeLanguage() {
+        const lang = document.getElementById("lang").value;
+        localStorage.setItem("language", lang);
+        applyLanguage(lang);
+    }
+
+    function applyLanguage(lang) {
+        const t = translations[lang];
+
+        document.getElementById("headerTitle").innerText = t.header;
+        document.getElementById("addTitle").innerText = t.addTitle;
+        document.getElementById("labelName").innerText = t.labelName;
+        document.getElementById("labelMedicine").innerText = t.labelMedicine;
+        document.getElementById("labelTime").innerText = t.labelTime;
+        document.getElementById("addButton").innerText = t.addButton;
+        document.getElementById("langTitle").innerText = t.langTitle;
+        document.getElementById("waAllBtn").innerText = t.waAllBtn;
+        document.getElementById("listTitle").innerText = t.listTitle;
+
+        render();
+    }
+
+    // Load saved language
+    const savedLang = localStorage.getItem("language") || "english";
+    document.getElementById("lang").value = savedLang;
+    applyLanguage(savedLang);
+
+    // ---------------------
+    // ADD PERSON
+    // ---------------------
+    function save() { localStorage.setItem("people", JSON.stringify(people)); }
+
+    function addPerson() {
+        const name = document.getElementById("name").value;
+        const med = document.getElementById("medicine").value;
+        const time = document.getElementById("time").value;
+
+        if (!name || !med || !time) { alert("Fill all fields!"); return; }
+
+        people.push({ name, medicine: med, time });
+        save();
+        render();
+
+        document.getElementById("name").value = "";
+        document.getElementById("medicine").value = "";
+        document.getElementById("time").value = "";
+    }
+
+    // ---------------------
+    // RENDER LIST
+    // ---------------------
+    function render() {
+        const lang = document.getElementById("lang").value;
+        const t = translations[lang];
+
+        const list = document.getElementById("list");
+        list.innerHTML = "";
+
+        people.forEach((p) => {
+            list.innerHTML += `
+                <div class="person">
+                    <strong>${t.labelName}</strong> ${p.name}<br>
+                    <strong>${t.labelMedicine}</strong> ${p.medicine}<br>
+                    <strong>${t.labelTime}</strong> ${p.time}<br><br>
+                </div>
+            `;
+        });
+    }
+
+    render();
+
+    // ---------------------------
+    // SEND ALL DATA VIA WHATSAPP
+    // ---------------------------
+    function sendAllWhatsApp() {
+        const lang = document.getElementById("lang").value;
+        const t = translations[lang];
+
+        if (people.length === 0) { alert("No data!"); return; }
+
+        let fullMsg = "";
+
+        people.forEach((p,i)=>{
+            fullMsg += `${i+1}. ${t.msg(p)}\n\n`;
+        });
+
+        const url = `https://wa.me/${caretakerNumber}?text=${encodeURIComponent(fullMsg)}`;
+        window.open(url, "_blank");
+    }
+</script>
+
+</body>
+</html>
